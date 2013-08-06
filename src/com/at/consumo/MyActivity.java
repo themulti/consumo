@@ -30,7 +30,7 @@ public class MyActivity extends Activity implements View.OnClickListener {
 
 
 
-    private ListView mainListView ;
+    private GridView mainListView ;
     private ListAdapter listAdapter ;
 
     private ConsumoSettings settings;
@@ -58,7 +58,7 @@ public class MyActivity extends Activity implements View.OnClickListener {
         setContentView(R.layout.main);
 
         // Find the ListView resource.
-        mainListView = (ListView) findViewById( R.id.listView );
+        mainListView = (GridView) findViewById( R.id.gridView );
 
 
 
@@ -93,17 +93,17 @@ public class MyActivity extends Activity implements View.OnClickListener {
         listAdapter.clear();
 
         //Map<String, String> maps = updateTime("44842", "TheMulti0102");
-        Map<String, String> maps = updateTime(settings.getUsername(), settings.getPassword());
+        Map<String, Object> maps = updateTime(settings.getUsername(), settings.getPassword());
 
         // Create ArrayAdapter using the planet list.
         String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
 
 
         if (maps != null){
-            listAdapter.add(new DescriptionData("7h as 24h\t:", maps.get("first")) );
-            listAdapter.add(new DescriptionData("Happy Hours\t:", maps.get("second")) );
-            listAdapter.add(new DescriptionData("Restante\t:", maps.get("third")) );
-            listAdapter.add(new DescriptionData("Excesso\t:", maps.get("fourth")) );
+            listAdapter.add(new DescriptionData("7h as 24h\t:", maps.get("first").toString()) );
+            listAdapter.add(new DescriptionData("Happy Hours\t:", maps.get("second").toString()) );
+            listAdapter.add(new DescriptionData("Restante\t:", maps.get("third").toString()) );
+            listAdapter.add(new DescriptionData("Excesso\t:", maps.get("fourth").toString()) );
             listAdapter.add(new DescriptionData("Data Hora\t:",  currentDateTimeString));
         }else{
             listAdapter.add(new DescriptionData("Erro :", "null") );
@@ -167,7 +167,7 @@ public class MyActivity extends Activity implements View.OnClickListener {
     }
 
 
-    private Map<String, String> updateTime(String login1, String login2) {
+    private Map<String, Object> updateTime(String login1, String login2) {
 //        button.setText(new Date().toString());
         try {
             String charset = "UTF-8";
@@ -240,7 +240,38 @@ public class MyActivity extends Activity implements View.OnClickListener {
 
             StringBuilder str2 = getResponseString(httpConnection);
 
-            return fetchVariables(str2.toString());
+            Map<String, Object> variables = fetchVariables(str2.toString());
+
+            String form = variables.get("form").toString();
+            String[] array = form.replaceAll("\'", "").split(",");
+            for (int i = 0; i < array.length; i++) {
+                array[i] = URLEncoder.encode(array[i], charset);
+            }
+            String url = String.format("http://portaldocliente.tvcabo.co.mz/ConsumosForm.aspx?nameForm=%s&idconta=%s&idPC=%s&DataIni=%s&DataFim=%s&MAC=%s", array);
+            URL detalhes = new URL(url);
+            httpConnection = (HttpURLConnection) detalhes.openConnection();
+            httpConnection.setRequestMethod("GET");
+            StringBuilder strDetalhes = getResponseString(httpConnection);
+
+            TagParser td = new TagParser("td", strDetalhes.toString(), strDetalhes.indexOf("CONSUMO HAPPY HOURS"));
+            String v = td.parse();
+
+            //String [][] array = new String[][];
+            List<String[]>  list = new ArrayList<String[]>();
+
+            while (!v.equalsIgnoreCase("TOTAL")){
+                String [] array1 = {v, td.parse(), td.parse(), td.parse()};
+                v = td.parse();
+                //System.out.println("array = " + Arrays.toString( array1));
+                list.add(array1);
+            }
+
+            variables.put("month", list);
+
+
+
+
+            return variables;
 
             //button.setText(variables.get("third"));
 
@@ -257,8 +288,8 @@ public class MyActivity extends Activity implements View.OnClickListener {
 
     }
 
-    private static Map<String, String> fetchVariables(String page) {
-        Map<String, String> variables = new HashMap<String, String>();
+    private static Map<String, Object> fetchVariables(String page) {
+        Map<String, Object> variables = new HashMap<String, Object>();
 
         int indexExcesso = page.indexOf("EXCESSO");
         String consumojavascript = "javascript:ConsumosForm(";
@@ -274,30 +305,17 @@ public class MyActivity extends Activity implements View.OnClickListener {
         variables.put("start", start);
         variables.put("end", end);
 
-        String tdstart = "<td align=\"center\">";
-        String tdend = "</td>";
-        Tuple first = findStringBetween(page, indexEndConsumoForm, tdstart, tdend);
-        System.out.println("first = " + first.value);
-        Tuple second = findStringBetween(page, first.lastPosition, tdstart, tdend);
-        System.out.println("second = " + second.value);
-        Tuple third = findStringBetween(page, second.lastPosition, tdstart, tdend);
-        System.out.println("third = " + third.value);
-        Tuple fourth = findStringBetween(page, third.lastPosition, tdstart, tdend);
-        System.out.println("fourth = " + fourth.value);
+        TagParser td = new TagParser("td", page, indexConsumoForm);
 
-        variables.put("first", first.value);
-        variables.put("second", second.value);
-        variables.put("third", third.value);
-        variables.put("fourth", fourth.value);
+        variables.put("first", td.parse());
+        variables.put("second", td.parse());
+        variables.put("third", td.parse());
+        variables.put("fourth", td.parse());
 
         return variables;
     }
 
-    private static Tuple findStringBetween(String st, int from, String tagstart, String tagend) {
-        int indexFirst = st.indexOf(tagstart, from);
-        int indexFirstEnd = st.indexOf(tagend, indexFirst + tagstart.length());
-        return new Tuple(indexFirstEnd,st.substring(indexFirst + tagstart.length(), indexFirstEnd));
-    }
+
 
     private static class Tuple {
         public int lastPosition;
