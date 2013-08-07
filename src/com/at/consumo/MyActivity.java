@@ -3,13 +3,17 @@ package com.at.consumo;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StrictMode;
-
+import android.preference.PreferenceManager;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
-import android.widget.*;
-
+import android.webkit.WebView;
+import android.widget.Button;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -19,21 +23,12 @@ import java.net.*;
 import java.text.DateFormat;
 import java.util.*;
 
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.TextView;
 public class MyActivity extends Activity implements View.OnClickListener {
     Button button;
 
 
-
-    private GridView mainListView ;
-    private ListAdapter listAdapter ;
-
     private ConsumoSettings settings;
+    private WebView webView;
 //
 //    @Override
 //    public boolean onCreateOptionsMenu(Menu menu) {
@@ -58,18 +53,15 @@ public class MyActivity extends Activity implements View.OnClickListener {
         setContentView(R.layout.main);
 
         // Find the ListView resource.
-        mainListView = (GridView) findViewById( R.id.gridView );
 
+        webView = (WebView) findViewById(R.id.webView);
 
-
-        listAdapter = new ListAdapter(this, R.layout.simplerow);
 
         // Add more planets. If you passed a String[] instead of a List<String>
         // into the ArrayAdapter constructor, you must not add more items.
         // Otherwise an exception will occur.
 
         // Set the ArrayAdapter as the ListView's adapter.
-        mainListView.setAdapter( listAdapter );
 
         Button refreshButton = (Button) findViewById(R.id.refresh);
         refreshButton.setOnClickListener(this);
@@ -87,10 +79,9 @@ public class MyActivity extends Activity implements View.OnClickListener {
 
     }
 
-    private  void update(){
+    private void update() {
         // Create and populate a List of planet names.
 
-        listAdapter.clear();
 
         //Map<String, String> maps = updateTime("44842", "TheMulti0102");
         Map<String, Object> maps = updateTime(settings.getUsername(), settings.getPassword());
@@ -99,18 +90,10 @@ public class MyActivity extends Activity implements View.OnClickListener {
         String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
 
 
-        if (maps != null){
-            listAdapter.add(new DescriptionData("7h as 24h\t:", maps.get("first").toString()) );
-            listAdapter.add(new DescriptionData("Happy Hours\t:", maps.get("second").toString()) );
-            listAdapter.add(new DescriptionData("Restante\t:", maps.get("third").toString()) );
-            listAdapter.add(new DescriptionData("Excesso\t:", maps.get("fourth").toString()) );
-            listAdapter.add(new DescriptionData("Data Hora\t:",  currentDateTimeString));
-        }else{
-            listAdapter.add(new DescriptionData("Erro :", "null") );
-        }
+        webView.loadData(maps.get("detail").toString(), "text/html", "UTF-8");
+
 
     }
-
 
 
     private static StringBuilder getResponseString(HttpURLConnection httpConnection) throws IOException {
@@ -251,16 +234,18 @@ public class MyActivity extends Activity implements View.OnClickListener {
             URL detalhes = new URL(url);
             httpConnection = (HttpURLConnection) detalhes.openConnection();
             httpConnection.setRequestMethod("GET");
-            StringBuilder strDetalhes = getResponseString(httpConnection);
+            StringBuilder strDetail = getResponseString(httpConnection);
 
-            TagParser td = new TagParser("td", strDetalhes.toString(), strDetalhes.indexOf("CONSUMO HAPPY HOURS"));
+            variables.put("detail", strDetail);
+
+            TagParser td = new TagParser("td", strDetail.toString(), strDetail.indexOf("CONSUMO HAPPY HOURS"));
             String v = td.parse();
 
             //String [][] array = new String[][];
-            List<String[]>  list = new ArrayList<String[]>();
+            List<String[]> list = new ArrayList<String[]>();
 
-            while (!v.equalsIgnoreCase("TOTAL")){
-                String [] array1 = {v, td.parse(), td.parse(), td.parse()};
+            while (!v.equalsIgnoreCase("TOTAL")) {
+                String[] array1 = {v, td.parse(), td.parse(), td.parse()};
                 v = td.parse();
                 //System.out.println("array = " + Arrays.toString( array1));
                 list.add(array1);
@@ -269,23 +254,16 @@ public class MyActivity extends Activity implements View.OnClickListener {
             variables.put("month", list);
 
 
-
-
             return variables;
 
             //button.setText(variables.get("third"));
 
 
         } catch (Exception e) {
+            e.printStackTrace();
             //button.setText(e.getMessage());
-            return null;
-            //e.printStackTrace();
+            return new HashMap<String, Object>();
         }
-
-
-
-
-
     }
 
     private static Map<String, Object> fetchVariables(String page) {
@@ -296,6 +274,7 @@ public class MyActivity extends Activity implements View.OnClickListener {
         int indexConsumoForm = page.indexOf(consumojavascript, indexExcesso);
         int indexEndConsumoForm = page.indexOf(");\"", indexConsumoForm + consumojavascript.length());
         String form = page.substring(indexConsumoForm + consumojavascript.length(), indexEndConsumoForm);
+
         String[] split = form.split(",");
         String start = split[3];
 //        System.out.println("inicio = " + start);
@@ -311,10 +290,10 @@ public class MyActivity extends Activity implements View.OnClickListener {
         variables.put("second", td.parse());
         variables.put("third", td.parse());
         variables.put("fourth", td.parse());
+        variables.put("form", form);
 
         return variables;
     }
-
 
 
     private static class Tuple {
@@ -328,7 +307,6 @@ public class MyActivity extends Activity implements View.OnClickListener {
     }
 
 
-
     @Override
     public void onClick(View view) {
         update();
@@ -339,6 +317,7 @@ public class MyActivity extends Activity implements View.OnClickListener {
         getMenuInflater().inflate(R.menu.settings, menu);
         return true;
     }
+
     private static final int RESULT_SETTINGS = 1;
 
     @Override
@@ -385,9 +364,6 @@ public class MyActivity extends Activity implements View.OnClickListener {
 //        builder.append("\n Sync Frequency: "
 //                + sharedPrefs.getString("prefSyncFrequency", "NULL"));
 
-        TextView settingsTextView = (TextView) findViewById(R.id.textUserSettings);
-
-        settingsTextView.setText(builder.toString());
 
         return new ConsumoSettings(username, password);
     }

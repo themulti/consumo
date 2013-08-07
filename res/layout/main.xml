@@ -5,26 +5,29 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <TextView
-            android:id="@+id/textUserSettings"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-             />
-
-    <GridView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/gridView" android:layout_gravity="left|center_vertical"/>
-    <Button
+    <LinearLayout
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/refresh"
-            android:id="@+id/refresh"/>
-
-    <Button
+            android:layout_height="51dp" android:layout_gravity="left|center_vertical">
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent"
+                android:text="@string/refresh"
+                android:id="@+id/refresh"/>
+        <Button
+                android:layout_width="151dp"
+                android:layout_height="wrap_content"
+                android:text="@string/setting"
+                android:id="@+id/setting"/>
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent"
+                android:text="About"
+                android:id="@+id/about"/>
+    </LinearLayout>
+    <WebView
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/setting"
-            android:id="@+id/setting"/>
+            android:layout_height="457dp"
+            android:id="@+id/webView" android:layout_marginTop="-1dp" android:layout_gravity="center"
+            android:layout_weight="1.14"/>
 
 </LinearLayout>
