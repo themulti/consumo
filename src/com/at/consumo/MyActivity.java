@@ -3,6 +3,8 @@ package com.at.consumo;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -20,81 +22,25 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
-import java.text.DateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MyActivity extends Activity implements View.OnClickListener {
+    private static final int RESULT_SETTINGS = 1;
     Button button;
-
-
     private ConsumoSettings settings;
-    private WebView webView;
-//
+    Button aboutButton;
+    Button refreshButton;
+    //
 //    @Override
 //    public boolean onCreateOptionsMenu(Menu menu) {
 //        MenuInflater inflater = getMenuInflater();
 //        inflater.inflate(R.layout.main, menu);
 //        return true;
 //    }
-
-
-    /**
-     * Called when the activity is first created.
-     */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-        //updateTime1();
-        requestWindowFeature(Window.FEATURE_ACTION_BAR);
-
-        ActionBar actionBar = getActionBar();
-        setContentView(R.layout.main);
-
-        // Find the ListView resource.
-
-        webView = (WebView) findViewById(R.id.webView);
-
-
-        // Add more planets. If you passed a String[] instead of a List<String>
-        // into the ArrayAdapter constructor, you must not add more items.
-        // Otherwise an exception will occur.
-
-        // Set the ArrayAdapter as the ListView's adapter.
-
-        Button refreshButton = (Button) findViewById(R.id.refresh);
-        refreshButton.setOnClickListener(this);
-        settings = showUserSettings();
-
-        Button settingButton = (Button) findViewById(R.id.setting);
-        settingButton.setOnClickListener(new View.OnClickListener() {
-
-            public void onClick(View v) {
-                Intent intent = new Intent(getBaseContext(), UserSettingActivity.class);
-                startActivity(intent);
-            }
-        });
-
-
-    }
-
-    private void update() {
-        // Create and populate a List of planet names.
-
-
-        //Map<String, String> maps = updateTime("44842", "TheMulti0102");
-        Map<String, Object> maps = updateTime(settings.getUsername(), settings.getPassword());
-
-        // Create ArrayAdapter using the planet list.
-        String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
-
-
-        webView.loadData(maps.get("detail").toString(), "text/html", "UTF-8");
-
-
-    }
-
+    private WebView webView;
 
     private static StringBuilder getResponseString(HttpURLConnection httpConnection) throws IOException {
         BufferedReader rd = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
@@ -149,9 +95,172 @@ public class MyActivity extends Activity implements View.OnClickListener {
         return maps;
     }
 
+    private static Map<String, Object> fetchVariables(String page) {
+        Map<String, Object> variables = new HashMap<String, Object>();
+
+        int indexExcesso = page.indexOf("EXCESSO");
+        String consumojavascript = "javascript:ConsumosForm(";
+        int indexConsumoForm = page.indexOf(consumojavascript, indexExcesso);
+        int indexEndConsumoForm = page.indexOf(");\"", indexConsumoForm + consumojavascript.length());
+        String form = page.substring(indexConsumoForm + consumojavascript.length(), indexEndConsumoForm);
+
+        String[] split = form.split(",");
+        String start = split[3];
+//        System.out.println("inicio = " + start);
+        String end = split[4];
+//        System.out.println("fim = " + end);
+
+        variables.put("start", start);
+        variables.put("end", end);
+
+        TagParser td = new TagParser("td", page, indexConsumoForm);
+
+        variables.put("first", td.parse());
+        variables.put("second", td.parse());
+        variables.put("third", td.parse());
+        variables.put("fourth", td.parse());
+        variables.put("form", form);
+
+        return variables;
+    }
+
+    /**
+     * Called when the activity is first created.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        //updateTime1();
+        requestWindowFeature(Window.FEATURE_ACTION_BAR);
+
+        ActionBar actionBar = getActionBar();
+        setContentView(R.layout.main);
+
+        // Find the ListView resource.
+
+        webView = (WebView) findViewById(R.id.webView);
+
+
+        // Add more planets. If you passed a String[] instead of a List<String>
+        // into the ArrayAdapter constructor, you must not add more items.
+        // Otherwise an exception will occur.
+
+        // Set the ArrayAdapter as the ListView's adapter.
+
+        refreshButton = (Button) findViewById(R.id.refresh);
+        refreshButton.setOnClickListener(this);
+        settings = showUserSettings();
+
+        Button settingButton = (Button) findViewById(R.id.setting);
+        settingButton.setOnClickListener(new View.OnClickListener() {
+
+            public void onClick(View v) {
+                Intent intent = new Intent(getBaseContext(), UserSettingActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+        aboutButton = (Button) findViewById(R.id.about);
+        aboutButton.setOnClickListener(new View.OnClickListener() {
+
+            public void onClick(View arg0) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MyActivity.this);
+
+                // Set Alert Dialog Title
+                builder.setTitle("Consumo");
+
+                // Set an Icon for this Alert Dialog
+                //builder.setIcon(R.drawable.ic_launcher);
+
+
+                // Set Alert Dialog Message
+                builder.setMessage("\n\nAdvanced Technology®\n\n\nthemulti@gmail.com")
+
+                        // Neautral button functionality
+                        .setNeutralButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int arg0) {
+                                //Toast.makeText(AlertDialogActivity.this, "You clicked on OK", Toast.LENGTH_SHORT).show();
+                                //Do more stuffs
+                            }
+                        });
+
+                // Create the Alert Dialog
+                AlertDialog alertdialog = builder.create();
+
+                // Show Alert Dialog
+                alertdialog.show();
+            }
+        });
+
+    }
+
+    private void update() {
+        if (isEmptyOrNull(settings.getUsername()) || isEmptyOrNull(settings.getPassword())) {
+            invalidUsernamePassword("Please set username/password!!");
+        } else {
+            Map<String, Object> maps = updateTime(settings.getUsername(), settings.getPassword());
+            if (maps.isEmpty()) {
+                sendErrorMessage("Ocorreu algum erro!!");
+            } else if (maps.containsKey("usernamepassword")) {
+                invalidUsernamePassword("Please set username/password!!");
+            } else {
+                webView.loadData(maps.get("detail").toString(), "text/html", "UTF-8");
+            }
+
+            //String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
+        }
+    }
+
+    private boolean isEmptyOrNull(String s) {
+        return (s == null || s.trim().length() == 0);
+    }
+
+    private void sendErrorMessage(String s) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MyActivity.this);
+        // Set Alert Dialog Title
+        builder.setTitle("Error Message");
+
+        // Set Alert Dialog Message
+        builder.setMessage(s)
+                // Neautral button functionality
+                .setNeutralButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int arg0) {
+                    }
+                });
+
+        // Create the Alert Dialog
+        AlertDialog alertdialog = builder.create();
+
+        // Show Alert Dialog
+        alertdialog.show();
+    }
+
+    private void invalidUsernamePassword(String s) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MyActivity.this);
+        // Set Alert Dialog Title
+        builder.setTitle("Error Message");
+
+        // Set Alert Dialog Message
+        builder.setMessage(s)
+                // Neautral button functionality
+                .setNeutralButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int arg0) {
+                        Intent intent = new Intent(getBaseContext(), UserSettingActivity.class);
+                        startActivity(intent);
+                    }
+                });
+
+        // Create the Alert Dialog
+        AlertDialog alertdialog = builder.create();
+
+        // Show Alert Dialog
+        alertdialog.show();
+    }
 
     private Map<String, Object> updateTime(String login1, String login2) {
-//        button.setText(new Date().toString());
         try {
             String charset = "UTF-8";
 
@@ -168,8 +277,6 @@ public class MyActivity extends Activity implements View.OnClickListener {
             String loginPage = "http://portaldocliente.tvcabo.co.mz/HomePortalDoCliente.aspx?ReturnUrl=%2fConsumos.aspx";
 
             URL loginUrl = new URL(loginPage);
-
-
             HttpURLConnection httpConnection = (HttpURLConnection) loginUrl.openConnection();
 
 //            httpConnection.setInstanceFollowRedirects(true);
@@ -216,7 +323,12 @@ public class MyActivity extends Activity implements View.OnClickListener {
             // Get the response
             StringBuilder str = getResponseString(httpConnection);
 
-            URL consumoUrl = new URL("http://portaldocliente.tvcabo.co.mz/Consumos.aspx");
+            if (str.toString().indexOf("Introduza-os") > 0) {
+                Map<String, Object> variables = new HashMap<String, Object>();
+                variables.put("usernamepassword", "0");
+                return variables;
+            } else {
+                URL consumoUrl = new URL("http://portaldocliente.tvcabo.co.mz/Consumos.aspx");
             httpConnection = (HttpURLConnection) consumoUrl.openConnection();
             httpConnection.setRequestMethod("GET");
 
@@ -255,6 +367,8 @@ public class MyActivity extends Activity implements View.OnClickListener {
 
 
             return variables;
+            }
+
 
             //button.setText(variables.get("third"));
 
@@ -265,47 +379,6 @@ public class MyActivity extends Activity implements View.OnClickListener {
             return new HashMap<String, Object>();
         }
     }
-
-    private static Map<String, Object> fetchVariables(String page) {
-        Map<String, Object> variables = new HashMap<String, Object>();
-
-        int indexExcesso = page.indexOf("EXCESSO");
-        String consumojavascript = "javascript:ConsumosForm(";
-        int indexConsumoForm = page.indexOf(consumojavascript, indexExcesso);
-        int indexEndConsumoForm = page.indexOf(");\"", indexConsumoForm + consumojavascript.length());
-        String form = page.substring(indexConsumoForm + consumojavascript.length(), indexEndConsumoForm);
-
-        String[] split = form.split(",");
-        String start = split[3];
-//        System.out.println("inicio = " + start);
-        String end = split[4];
-//        System.out.println("fim = " + end);
-
-        variables.put("start", start);
-        variables.put("end", end);
-
-        TagParser td = new TagParser("td", page, indexConsumoForm);
-
-        variables.put("first", td.parse());
-        variables.put("second", td.parse());
-        variables.put("third", td.parse());
-        variables.put("fourth", td.parse());
-        variables.put("form", form);
-
-        return variables;
-    }
-
-
-    private static class Tuple {
-        public int lastPosition;
-        public String value;
-
-        private Tuple(int lastPosition, String value) {
-            this.lastPosition = lastPosition;
-            this.value = value;
-        }
-    }
-
 
     @Override
     public void onClick(View view) {
@@ -318,16 +391,23 @@ public class MyActivity extends Activity implements View.OnClickListener {
         return true;
     }
 
-    private static final int RESULT_SETTINGS = 1;
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-
-            case R.id.menu_settings:
+            case R.id.menu_settings: {
                 Intent i = new Intent(this, UserSettingActivity.class);
                 startActivityForResult(i, RESULT_SETTINGS);
-                break;
+            }
+            break;
+            case R.id.menu_about: {
+                aboutButton.performClick();
+            }
+            break;
+
+            case R.id.menu_refresh: {
+                refreshButton.performClick();
+            }
+            break;
 
         }
 
@@ -366,6 +446,16 @@ public class MyActivity extends Activity implements View.OnClickListener {
 
 
         return new ConsumoSettings(username, password);
+    }
+
+    private static class Tuple {
+        public int lastPosition;
+        public String value;
+
+        private Tuple(int lastPosition, String value) {
+            this.lastPosition = lastPosition;
+            this.value = value;
+        }
     }
 
 
