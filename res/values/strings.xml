@@ -24,18 +24,20 @@
     <string name="pref_password_summary">Set you password</string>
     <string name="menu_about">About</string>
     <string name="menu_refresh">Refresh</string>
+    <string name="setUsernamePassword">Please set username/password!!</string>
+    <string name="errorOcurred">Ocorreu algum erro!!</string>
 
 
     <!--<string-array name="syncFrequency">-->
-        <!--<item  name="1">Once a day</item>-->
-        <!--<item name="7">Once a week</item>-->
-        <!--<item name="3">Once a year</item>-->
-        <!--<item name="0">Never (Update maually)</item>-->
+    <!--<item  name="1">Once a day</item>-->
+    <!--<item name="7">Once a week</item>-->
+    <!--<item name="3">Once a year</item>-->
+    <!--<item name="0">Never (Update maually)</item>-->
     <!--</string-array>-->
     <!--<string-array name="syncFrequencyValues">-->
-        <!--<item name="1">1</item>-->
-        <!--<item name="7">7</item>-->
-        <!--<item name="30">30</item>-->
-        <!--<item name="0">0</item>-->
+    <!--<item name="1">1</item>-->
+    <!--<item name="7">7</item>-->
+    <!--<item name="30">30</item>-->
+    <!--<item name="0">0</item>-->
     <!--</string-array>-->
 </resources>

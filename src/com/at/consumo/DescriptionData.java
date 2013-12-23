@@ -1,21 +1,22 @@
 package com.at.consumo;
 
+import java.io.Serializable;
+
 /**
 * Created with IntelliJ IDEA.
 * User: at
 * Date: 4/18/13
 * Time: 8:50 PM
-* To change this template use File | Settings | File Templates.
 */
-public class DescriptionData {
+public class DescriptionData implements Serializable {
 
     public DescriptionData(String description, String value) {
         this.description = description;
         this.value = value;
     }
 
-    String description;
-    String value;
+    private String description;
+    private String value;
 
     public String getDescription() {
         return description;

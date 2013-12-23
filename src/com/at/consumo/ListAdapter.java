@@ -14,8 +14,6 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import java.util.List;
-
 public class ListAdapter extends ArrayAdapter<DescriptionData> {
 
 
@@ -27,7 +25,6 @@ public class ListAdapter extends ArrayAdapter<DescriptionData> {
         View v = convertView;
 
         if (v == null) {
-
             LayoutInflater vi = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             v = vi.inflate(R.layout.simplerow, null);
         }
@@ -37,11 +34,12 @@ public class ListAdapter extends ArrayAdapter<DescriptionData> {
         if (item != null) {
             TextView title = (TextView) v.findViewById(R.id.rowTitle);
             TextView value = (TextView) v.findViewById(R.id.rowValue);
+
             if (title != null) {
-                title.setText(item.description);
+                title.setText(item.getDescription());
             }
             if (value != null) {
-                value.setText(item.value);
+                value.setText(item.getValue());
             }
         }
 

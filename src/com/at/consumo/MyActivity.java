@@ -198,14 +198,15 @@ public class MyActivity extends Activity implements View.OnClickListener {
     }
 
     private void update() {
+        settings = showUserSettings();
         if (isEmptyOrNull(settings.getUsername()) || isEmptyOrNull(settings.getPassword())) {
-            invalidUsernamePassword("Please set username/password!!");
+            invalidUsernamePassword(getString(R.string.setUsernamePassword));
         } else {
             Map<String, Object> maps = updateTime(settings.getUsername(), settings.getPassword());
             if (maps.isEmpty()) {
-                sendErrorMessage("Ocorreu algum erro!!");
+                sendErrorMessage(getString(R.string.errorOcurred));
             } else if (maps.containsKey("usernamepassword")) {
-                invalidUsernamePassword("Please set username/password!!");
+                invalidUsernamePassword(getString(R.string.setUsernamePassword));
             } else {
                 webView.loadData(maps.get("detail").toString(), "text/html", "UTF-8");
             }
@@ -382,6 +383,7 @@ public class MyActivity extends Activity implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
+
         update();
     }
 
